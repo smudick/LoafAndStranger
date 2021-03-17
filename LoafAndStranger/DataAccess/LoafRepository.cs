@@ -10,34 +10,6 @@ namespace LoafAndStranger.DataAccess
     public class LoafRepository
     {
         const string ConnectionString = "Server=localhost;Database=LoafAndStranger;Trusted_Connection=True;";
-        static List<Loaf> _loaves = new List<Loaf>
-            {
-                 new Loaf { Id = 1, Price = 5.50m, Size = LoafSize.Medium, Sliced = true, Type= "Rye"},
-                 new Loaf { Id = 2, Price = 2.50m, Size = LoafSize.Small, Sliced = false, Type= "French"},
-            };
-
-        private Loaf MapLoaf(SqlDataReader reader)
-        {
-            var id = (int)reader["Id"]; //explicit cast (on fail throws exception)
-            var size = (LoafSize)reader["Size"];
-            var type = reader["Type"] as string; //implicit cast (on fail returns null)
-            var price = (decimal)reader["Price"];
-            var sliced = (bool)reader["sliced"];
-            var createdDate = (DateTime)reader["createdDate"];
-            var weightInOunces = (int)reader["weightInOunces"];
-
-            //make a loaf
-            var loaf = new Loaf()
-            {
-                Id = id,
-                Price = price,
-                Size = size,
-                Type = type,
-                Sliced = sliced,
-                WeightInOunces = weightInOunces
-            };
-            return loaf;
-        }
         public List<Loaf> GetAll()
         {
 
@@ -70,12 +42,6 @@ namespace LoafAndStranger.DataAccess
 
             return loaves;
         }
-        public void Add(Loaf loaf)
-        {
-            var biggestExistingId = _loaves.Max(l => l.Id);
-            loaf.Id = biggestExistingId + 1;
-            _loaves.Add(loaf);
-        }
         public Loaf Get(int id)
         {
             var sql = $@"Select *
@@ -83,7 +49,7 @@ namespace LoafAndStranger.DataAccess
                         where Id = @Id";
 
             //create a connection
-            using var connection = new SqlConnection(ConnectionString);
+            using var connection = new SqlConnection(ConnectionString); //using only works with things that have the IDisposable property, when it's done it calls .dispose
             //Open it
             connection.Open();
             //create a command
@@ -101,11 +67,60 @@ namespace LoafAndStranger.DataAccess
             }
             return null;
         }
+        private Loaf MapLoaf(SqlDataReader reader)
+        {
+            var id = (int)reader["Id"]; //explicit cast (on fail throws exception)
+            var size = (LoafSize)reader["Size"];
+            var type = reader["Type"] as string; //implicit cast (on fail returns null)
+            var price = (decimal)reader["Price"];
+            var sliced = (bool)reader["sliced"];
+            var createdDate = (DateTime)reader["createdDate"];
+            var weightInOunces = (int)reader["weightInOunces"];
 
+            //make a loaf
+            var loaf = new Loaf()
+            {
+                Id = id,
+                Price = price,
+                Size = size,
+                Type = type,
+                Sliced = sliced,
+                WeightInOunces = weightInOunces
+            };
+            return loaf;
+        }
+        public void Add(Loaf loaf)
+        {
+            using var connection = new SqlConnection(ConnectionString);
+            connection.Open();
+            var cmd = connection.CreateCommand();
+            cmd.CommandText = @"INSERT INTO [dbo].[Loaves]([Size],[Type],[WeightInOunces],[Price],[Sliced])
+                                OUTPUT inserted.Id
+                                VALUES(@Size, @Type, @WeightInOunces, @Price, @Sliced)";
+
+            cmd.Parameters.AddWithValue("Size", loaf.Size);
+            cmd.Parameters.AddWithValue("Type", loaf.Type);
+            cmd.Parameters.AddWithValue("WeightInOunces", loaf.WeightInOunces);
+            cmd.Parameters.AddWithValue("Price", loaf.Price);
+            cmd.Parameters.AddWithValue("Sliced", loaf.Sliced);
+
+            var id = (int)cmd.ExecuteScalar();
+
+            loaf.Id = id;
+        }
         public void Remove(int id)
         {
-            var loafToRemove = Get(id);
-            _loaves.Remove(loafToRemove);
+
+            using var connection = new SqlConnection(ConnectionString);
+            connection.Open();
+
+            var cmd = connection.CreateCommand();
+            cmd.CommandText = @"DELETE 
+                                from Loaves
+                                WHERE Id = @Id";
+
+            cmd.Parameters.AddWithValue("Id", id);
+            cmd.ExecuteNonQuery();
         }
     }
 }
