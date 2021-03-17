@@ -56,7 +56,7 @@ namespace LoafAndStranger.Controllers
             return NoContent();
         }
         //Delete /api/loaves/{loafid}
-        [HttpDelete("{loadId}")]
+        [HttpDelete("{loafId}")]
         public IActionResult PurchaseLoaf(int loafId)
         {
             _repo.Remove(loafId);
