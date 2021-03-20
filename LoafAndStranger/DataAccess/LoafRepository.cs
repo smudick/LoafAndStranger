@@ -50,6 +50,7 @@ namespace LoafAndStranger.DataAccess
 
             loaf.Id = id;
         }
+
         public void Remove(int id)
         {
             var sql = @"DELETE 
@@ -58,6 +59,32 @@ namespace LoafAndStranger.DataAccess
 
             using var db = new SqlConnection(ConnectionString);
 
+            db.Execute(sql, new { id });
+        }
+        public void Update(Loaf loaf)
+        {
+            var sql = @"update Loaves
+                        Set Price = @price,
+                            Size = @size,
+                            WeightInOunces = @weightinounces,
+                            Sliced = @sliced,
+                            Type = @type
+                        where Id = @id";
+
+            using var db = new SqlConnection(ConnectionString);
+
+            db.Execute(sql, loaf);
+        }
+
+        public void Slice(int id)
+        {
+            var sql = @"update Loaves
+                        Set Sliced = 1
+                        where Id = @id";
+
+            using var db = new SqlConnection(ConnectionString);
+
+            //anonymous type with implicit property naming
             db.Execute(sql, new { id });
         }
     }
