@@ -5,87 +5,51 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Data.SqlClient;
 using Dapper;
+using Microsoft.EntityFrameworkCore;
 
 namespace LoafAndStranger.DataAccess
 {
     public class LoafRepository
     {
-        const string ConnectionString = "Server=localhost;Database=LoafAndStranger;Trusted_Connection=True;";
-        public List<Loaf> GetAll()
+        AppDbContext _db;
+        public LoafRepository(AppDbContext db)
         {
-
-            //Create a connection
-            using var db = new SqlConnection(ConnectionString);
-
-
-            //telling the command what you want to do
-            var sql = @"Select * 
-                        from Loaves";
-
-            return db.Query<Loaf>(sql).ToList(); ;
+            _db = db;
         }
+        public List<Loaf> GetAll() => _db.Loaves.ToList();
         public Loaf Get(int id)
         {
-            var sql = $@"Select *
-                        From Loaves
-                        where Id = @id";
-
-            //create a connection
-            using var db = new SqlConnection(ConnectionString); //using only works with things that have the IDisposable property, when it's done it calls .dispose
-
-            var loaf = db.QueryFirstOrDefault<Loaf>(sql, new { id = id });
-
-            return loaf;
-
+            return _db.Loaves.Find(id);
         }
         public void Add(Loaf loaf)
         {
-            using var db = new SqlConnection(ConnectionString);
+            _db.Loaves.Add(loaf);
+            _db.SaveChanges();
 
-            var sql = @"INSERT INTO [dbo].[Loaves]([Size],[Type],[WeightInOunces],[Price],[Sliced])
-                        OUTPUT inserted.Id
-                        VALUES(@Size, @Type, @WeightInOunces, @Price, @Sliced)";
-
-            var id = db.ExecuteScalar<int>(sql, loaf);
-
-            loaf.Id = id;
         }
 
         public void Remove(int id)
         {
-            var sql = @"DELETE 
-                       from Loaves
-                       where Id = @id";
-
-            using var db = new SqlConnection(ConnectionString);
-
-            db.Execute(sql, new { id });
+            _db.Loaves.Remove(Get(id));
         }
         public void Update(Loaf loaf)
         {
-            var sql = @"update Loaves
-                        Set Price = @price,
-                            Size = @size,
-                            WeightInOunces = @weightinounces,
-                            Sliced = @sliced,
-                            Type = @type
-                        where Id = @id";
+            //This is how ef wants you to do updates
+            //var existingLoaf = Get(loaf.Id); //get thing to update
+            //existingLoaf.Sliced = loaf.Sliced; //change the required/updated fields
 
-            using var db = new SqlConnection(ConnectionString);
+            //_db.SaveChanges(); //Save it
 
-            db.Execute(sql, loaf);
+            //This tells EF to take a loaf from the outside world and treat it like something it watched change
+            _db.Loaves.Attach(loaf).State = EntityState.Modified; 
+            _db.SaveChanges();
         }
 
         public void Slice(int id)
         {
-            var sql = @"update Loaves
-                        Set Sliced = 1
-                        where Id = @id";
-
-            using var db = new SqlConnection(ConnectionString);
-
-            //anonymous type with implicit property naming
-            db.Execute(sql, new { id });
+            var loaf = Get(id);
+            loaf.Sliced = true;
+            _db.SaveChanges();
         }
     }
 }

@@ -36,6 +36,7 @@ namespace LoafAndStranger
             services.AddSingleton(Configuration);
             services.AddTransient<StrangersRepository>();
             services.AddTransient<TopsRepository>();
+            services.AddTransient<LoafRepository>();
 
             services.AddDbContext<AppDbContext>(opt => opt.UseSqlServer(Configuration.GetConnectionString("LoafAndStranger")));
         }
