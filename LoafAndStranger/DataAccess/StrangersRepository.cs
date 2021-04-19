@@ -29,12 +29,12 @@ namespace LoafAndStranger.DataAccess
 
             var strangers = db.Query<Stranger,Top,Loaf,Stranger>(sql,
                 (stranger,top,loaf) => 
-            {
-                stranger.Loaf = loaf;
-                stranger.Top = top;
+                {
+                    stranger.Loaf = loaf;
+                    stranger.Top = top;
 
-                return stranger;
-            }, splitOn:"Id");
+                    return stranger;
+                }, splitOn:"Id");
             return strangers;
         }
     }
